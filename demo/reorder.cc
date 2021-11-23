@@ -8,6 +8,7 @@
 #include <boost/range/algorithm/count.hpp>
 #include "../rabbit_order.hpp"
 #include "edge_list.hpp"
+#include <fstream>
 
 using rabbit_order::vint;
 typedef std::vector<std::vector<std::pair<vint, float> > > adjacency_list;
@@ -157,7 +158,7 @@ double compute_modularity(const adjacency_list& adj, const vint* const coms) {
   return q;
 }
 
-void detect_community(adjacency_list adj) {
+void detect_community(adjacency_list adj, const std::string outpath) {
   auto _adj = adj;  // copy `adj` because it is used for computing modularity
 
   std::cerr << "Detecting communities...\n";
@@ -173,7 +174,17 @@ void detect_community(adjacency_list adj) {
             << rabbit_order::now_sec() - tstart << std::endl;
 
   // Print the result
-  std::copy(&c[0], &c[g.n()], std::ostream_iterator<vint>(std::cout, "\n"));
+  // std::copy(&c[0], &c[g.n()], std::ostream_iterator<vint>(std::cout, "\n"));
+  // write_community
+  {
+    std::cout << "output=" << outpath << std::endl;
+    std::ofstream fout(outpath);
+    for (vint v = 0; v < g.n(); ++v) {
+      fout << v << " " << c[v] << "\n";
+    }
+    fout.close();
+    std::cout << "--finish write to " << outpath << "\n" << std::endl;
+  }
 
   std::cerr << "Computing modularity of the result...\n";
   const double q = compute_modularity(adj, c.get());
@@ -198,13 +209,31 @@ int main(int argc, char* argv[]) {
   using boost::adaptors::transformed;
 
   // Parse command-line arguments
-  if (argc != 2 && (argc != 3 || std::string("-c") != argv[1])) {
-    std::cerr << "Usage: reorder [-c] GRAPH_FILE\n"
-              << "  -c    Print community IDs instead of a new ordering\n";
+  // if (argc != 2 && (argc != 3 || std::string("-c") != argv[1])) {
+  //   std::cerr << "Usage: reorder [-c] GRAPH_FILE\n"
+  //             << "  -c    Print community IDs instead of a new ordering\n";
+  //   exit(EXIT_FAILURE);
+  // }
+
+  if (argc != 2 && (argc != 3 || std::string("-c") != argv[1]) && (argc != 5 || std::string("-o") != argv[3])) {
+    std::cerr << "Usage: reorder GRAPH_FILE [-c] [-o] outpath\n"
+              << "  -c    Print community IDs instead of a new ordering\n"
+              << "  -o    write result.\n";
     exit(EXIT_FAILURE);
   }
-  const std::string graphpath = argc == 3 ? argv[2] : argv[1];
-  const bool        commode   = argc == 3;
+
+  const std::string graphpath = argv[1];
+  const bool        commode   = std::string("-c") == argv[2];
+  std::string       outpath   = "";
+
+  for (int i = 0; i < 5; i++) {
+    std::string t = argv[i];
+    std::cout << "i=" << i << " " << t << std::endl;
+  }
+
+  if (argc == 5 && std::string("-o") == argv[3]) {
+    outpath = argv[4];
+  }
 
   std::cerr << "Number of threads: " << omp_get_max_threads() << std::endl;
 
@@ -216,10 +245,14 @@ int main(int argc, char* argv[]) {
   std::cerr << "Number of vertices: " << adj.size() << std::endl;
   std::cerr << "Number of edges: "    << m          << std::endl;
 
-  if (commode)
-    detect_community(std::move(adj));
-  else
+  if (commode) {
+    std::cerr << "\ndetect_community: " << std::endl;
+    detect_community(std::move(adj), outpath);
+  }
+  else {
+    std::cerr << "\nreorder: " << std::endl;
     reorder(std::move(adj));
+  }
 
   return EXIT_SUCCESS;
 }
