@@ -289,6 +289,7 @@ struct vertex {
 //
 struct graph {
   numa_unique_ptr<atomix<vint>[]>     coms;     // Vertex ID -> community ID
+  numa_unique_ptr<atomix<vint>[]>     node_nums;// Vertex ID -> include node's number
   unique_c_ptr<vertex[]>              vs;       // Vertex ID -> attributes
   std::vector<std::vector<edge> >     es;       // Vertex ID -> edges
   double                              tot_wgt;  // Total weight of all edges
@@ -310,6 +311,7 @@ struct graph {
     const vint nvtx = static_cast<vint>(es.size());
     vs   = make_aligned_unique<vertex[]>(nvtx, sizeof(vertex));
     coms = make_unique_interleaved<atomix<vint>[]>(nvtx);
+    node_nums = make_unique_interleaved<atomix<vint>[]>(nvtx);
 
     double w = 0.0;
     #pragma omp parallel for reduction(+:w)
@@ -319,6 +321,7 @@ struct graph {
       ::new(&vs[v]) vertex(s);
       w += s;
       coms[v] = v;
+      node_nums[v] = 1;
     }
     tot_wgt = w;
   }
@@ -458,7 +461,9 @@ vint find_best(const graph& g, const vint v, const double vstr) {
   for (const edge e : g.es[v]) {
     const double d =
         static_cast<double>(e.second) - vstr * g.vs[e.first].a->str / g.tot_wgt;
-    if (dmax < d) {
+    // std::cout << "     --vid=" << v << " nbr.id=" << e.first << " nums=" << g.node_nums[e.first] << " v.nums=" << g.node_nums[v] << std::endl;
+    if (dmax < d && g.node_nums[e.first] + g.node_nums[v] < 2000) {
+      // std::cout << " vid=" << v << " nbr.id=" << e.first << " nums=" << g.node_nums[e.first] << std::endl;
       dmax = d;
       best = e.first;
     }
@@ -517,6 +522,7 @@ vint merge(const vint v, std::vector<edge>* const nbrs, graph* const g) {
 
     // Update the community of `v`
     g->coms[v] = u;
+    g->node_nums[u].fetch_add(g->node_nums[v]);
   }
 
   assert(u != v || is_toplevel(*g, v));

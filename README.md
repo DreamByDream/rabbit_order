@@ -27,7 +27,7 @@ Type `make` in the `demo/` directory to build the program.
 - g++ (4.9.2)
 - Boost C++ library (1.58.0)
 - libnuma (2.0.9)
-- libtcmalloc\_minimal in google-perftools (2.1)
+- libtcmalloc\_minimal in google-perftools (2.1) https://blog.csdn.net/woaiwojia6699/article/details/111224528
 
 Numbers in each parenthesis are the oldest versions that we used to test this
 program.

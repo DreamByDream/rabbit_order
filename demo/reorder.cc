@@ -8,6 +8,9 @@
 #include <boost/range/algorithm/count.hpp>
 #include "../rabbit_order.hpp"
 #include "edge_list.hpp"
+#include<fstream>  
+#include<iostream>  
+#include<string>
 
 using rabbit_order::vint;
 typedef std::vector<std::vector<std::pair<vint, float> > > adjacency_list;
@@ -157,7 +160,7 @@ double compute_modularity(const adjacency_list& adj, const vint* const coms) {
   return q;
 }
 
-void detect_community(adjacency_list adj) {
+void detect_community(adjacency_list adj, const std::string outpath) {
   auto _adj = adj;  // copy `adj` because it is used for computing modularity
 
   std::cerr << "Detecting communities...\n";
@@ -169,11 +172,21 @@ void detect_community(adjacency_list adj) {
   for (vint v = 0; v < g.n(); ++v)
     c[v] = rabbit_order::trace_com(v, &g);
   //--------------------------------------------
-  std::cerr << "Runtime for community detection [sec]: "
+  std::cerr << "Runtime for community detection [sec] cluster_time: "
             << rabbit_order::now_sec() - tstart << std::endl;
 
   // Print the result
-  std::copy(&c[0], &c[g.n()], std::ostream_iterator<vint>(std::cout, "\n"));
+  // std::copy(&c[0], &c[g.n()], std::ostream_iterator<vint>(std::cout, "\n"));
+  // write_community
+  {
+    std::cout << "output=" << outpath << std::endl;
+    std::ofstream fout(outpath);
+    for (vint v = 0; v < g.n(); ++v) {
+      fout << v << " " << c[v] << "\n";
+    }
+    fout.close();
+    std::cout << "--finish write to " << outpath << "\n" << std::endl;
+  }
 
   std::cerr << "Computing modularity of the result...\n";
   const double q = compute_modularity(adj, c.get());
@@ -198,13 +211,39 @@ int main(int argc, char* argv[]) {
   using boost::adaptors::transformed;
 
   // Parse command-line arguments
-  if (argc != 2 && (argc != 3 || std::string("-c") != argv[1])) {
-    std::cerr << "Usage: reorder [-c] GRAPH_FILE\n"
-              << "  -c    Print community IDs instead of a new ordering\n";
-    exit(EXIT_FAILURE);
+  // if (argc != 2 && (argc != 3 || std::string("-c") != argv[1])) {
+  //   std::cerr << "Usage: reorder [-c] GRAPH_FILE\n"
+  //             << "  -c    Print community IDs instead of a new ordering\n";
+  //   exit(EXIT_FAILURE);
+  // }
+  // const std::string graphpath = argc == 3 ? argv[2] : argv[1];
+  // const bool        commode   = argc == 3;
+
+  // std::cerr << "Number of threads: " << omp_get_max_threads() << std::endl;
+
+  // std::cerr << "Reading an edge-list file: " << graphpath << std::endl;
+  // auto       adj = read_graph(graphpath);
+  // const auto m   =
+  //     boost::accumulate(adj | transformed([](auto& es) {return es.size();}),
+                        // static_cast<size_t>(0));
+
+  // ./reorder ../dataset/test_graph 16 -o ./
+
+  const std::string graphpath = argv[1];
+  const bool        commode   = true;
+  std::string       outpath   = "";
+
+  for (int i = 0; i < argc; i++) {
+    std::string t = argv[i];
+    std::cout << "i=" << i << " " << t << std::endl;
   }
-  const std::string graphpath = argc == 3 ? argv[2] : argv[1];
-  const bool        commode   = argc == 3;
+
+  int threads = std::stoi(argv[2]);
+  omp_set_num_threads(threads);
+
+  if (argc == 5 && std::string("-o") == argv[3]) {
+    outpath = argv[4];
+  }
 
   std::cerr << "Number of threads: " << omp_get_max_threads() << std::endl;
 
@@ -217,7 +256,7 @@ int main(int argc, char* argv[]) {
   std::cerr << "Number of edges: "    << m          << std::endl;
 
   if (commode)
-    detect_community(std::move(adj));
+    detect_community(std::move(adj), outpath);
   else
     reorder(std::move(adj));
 
