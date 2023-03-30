@@ -255,10 +255,14 @@ int main(int argc, char* argv[]) {
   std::cerr << "Number of vertices: " << adj.size() << std::endl;
   std::cerr << "Number of edges: "    << m          << std::endl;
 
-  if (commode)
+  if (commode) {
+    std::cerr << "\ndetect_community: " << std::endl;
     detect_community(std::move(adj), outpath);
-  else
+  }
+  else {
+    std::cerr << "\nreorder: " << std::endl;
     reorder(std::move(adj));
+  }
 
   return EXIT_SUCCESS;
 }
