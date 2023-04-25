@@ -25,9 +25,9 @@ Type `make` in the `demo/` directory to build the program.
 ### Requirements
 
 - g++ (4.9.2)
-- Boost C++ library (1.58.0)
-- libnuma (2.0.9)
-- libtcmalloc\_minimal in google-perftools (2.1) https://blog.csdn.net/woaiwojia6699/article/details/111224528
+- Boost C++ library (1.58.0): [boost install](https://blog.csdn.net/qq_39451578/article/details/130375997?csdn_share_tail=%7B%22type%22%3A%22blog%22%2C%22rType%22%3A%22article%22%2C%22rId%22%3A%22130375997%22%2C%22source%22%3A%22qq_39451578%22%7D)
+- libnuma (2.0.9): sudo apt install libnuma-dev
+- libtcmalloc\_minimal in google-perftools (2.1): https://blog.csdn.net/woaiwojia6699/article/details/111224528
 
 Numbers in each parenthesis are the oldest versions that we used to test this
 program.
